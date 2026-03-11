@@ -1,120 +1,227 @@
 // === State ===
 let siteData = null;
+let knowledgeBase = [];
 let voiceEnabled = true;
 let isListening = false;
 let recognition = null;
+let conversationHistory = [];
 
-// === URL読み込み ===
-document.getElementById('load-btn').addEventListener('click', loadSite);
-document.getElementById('url-input').addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') loadSite();
-});
-
-async function loadSite() {
-  let url = document.getElementById('url-input').value.trim();
-  if (!url) return;
-
-  // プロトコル補完
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    url = 'https://' + url;
-    document.getElementById('url-input').value = url;
-  }
-
-  const loading = document.getElementById('loading-indicator');
-  loading.classList.remove('hidden');
-
+// === Init ===
+document.addEventListener('DOMContentLoaded', async () => {
+  // Load knowledge base and settings
   try {
-    // 1. サイト分析
-    const res = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url }),
-    });
+    const [kbRes, settingsRes] = await Promise.all([
+      fetch('/api/knowledge').catch(() => null),
+      fetch('/api/settings').catch(() => null),
+    ]);
 
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'サイトの取得に失敗しました');
+    if (kbRes && kbRes.ok) {
+      const kbData = await kbRes.json();
+      knowledgeBase = kbData.items || [];
     }
 
-    siteData = await res.json();
+    if (settingsRes && settingsRes.ok) {
+      const settings = await settingsRes.json();
+      if (settings.characterName) {
+        document.getElementById('avatar-name').textContent = settings.characterName;
+      }
+    }
+  } catch (e) {
+    // Silently continue with defaults
+  }
 
-    // 2. サービス内ブラウザで表示
-    const frame = document.getElementById('site-frame');
-    const welcome = document.getElementById('welcome-screen');
-    frame.src = '/api/proxy?url=' + encodeURIComponent(url);
-    frame.classList.remove('hidden');
-    welcome.classList.add('hidden');
+  // Eye tracking
+  document.addEventListener('mousemove', (e) => {
+    const eyes = document.querySelectorAll('.eye');
+    eyes.forEach(eye => {
+      const rect = eye.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const angle = Math.atan2(e.clientY - cy, e.clientX - cx);
+      const d = 2;
+      eye.style.transform = `translate(${Math.cos(angle) * d}px, ${Math.sin(angle) * d}px)`;
+    });
+  });
 
-    // 3. クイックアクション表示
-    document.getElementById('quick-actions').classList.remove('hidden');
+  // Voice list
+  if (window.speechSynthesis) {
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.addEventListener?.('voiceschanged', () => {
+      window.speechSynthesis.getVoices();
+    });
+  }
+});
 
-    // 4. アバターが自動で案内開始
-    showNotification();
-    const greeting = buildGreeting(siteData);
-    addBotMessage(greeting);
-    speak(greeting);
+// === Chat ===
+function handleChatKey(e) {
+  if (e.key === 'Enter') sendMessage();
+}
 
-    // 5. チャットを自動オープン
-    openChat();
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  addUserMessage(text);
+  input.value = '';
+  showTyping();
+  setTalking(true);
+
+  // Hide welcome, show content area
+  document.getElementById('welcome-screen').classList.add('hidden');
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: text,
+        siteData,
+        history: conversationHistory.slice(-10),
+      }),
+    });
+    const data = await res.json();
+
+    hideTyping();
+    addBotMessage(data.reply);
+    speak(data.reply);
+
+    // Track conversation
+    conversationHistory.push(
+      { role: 'user', content: text },
+      { role: 'assistant', content: data.reply }
+    );
+
+    // Update right panel
+    updateRightPanel(data);
 
   } catch (error) {
-    addBotMessage(`エラー: ${error.message}`);
-    openChat();
-  } finally {
-    loading.classList.add('hidden');
+    hideTyping();
+    addBotMessage('申し訳ありません、応答の生成に失敗しました。');
+  }
+
+  setTalking(false);
+}
+
+function sendSuggestion(btn) {
+  document.getElementById('chat-input').value = btn.textContent;
+  sendMessage();
+}
+
+// === Right Panel Updates ===
+function updateRightPanel(data) {
+  // AI Summary
+  if (data.summary) {
+    const summaryEl = document.getElementById('ai-summary');
+    const contentEl = document.getElementById('summary-content');
+    summaryEl.classList.remove('hidden');
+
+    let html = '';
+    if (data.summary.highlight) {
+      html += `<div class="summary-highlight">${escapeHtml(data.summary.highlight)}</div>`;
+    }
+    if (data.summary.sections) {
+      data.summary.sections.forEach(s => {
+        html += `<div class="summary-section"><h4>${escapeHtml(s.title)}</h4><p>${escapeHtml(s.content)}</p></div>`;
+      });
+    }
+    if (!html && data.summary.text) {
+      html = `<p>${escapeHtml(data.summary.text)}</p>`;
+    }
+    contentEl.innerHTML = html;
+  }
+
+  // Related Pages
+  if (data.relatedPages && data.relatedPages.length > 0) {
+    const container = document.getElementById('related-pages');
+    const linksEl = document.getElementById('related-links');
+    container.classList.remove('hidden');
+
+    linksEl.innerHTML = data.relatedPages.map(page => `
+      <div class="related-link" onclick="openPagePreview('${escapeAttr(page.url)}', '${escapeAttr(page.title)}')">
+        <div class="related-link-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+        </div>
+        <div class="related-link-text">
+          <div class="related-link-title">${escapeHtml(page.title)}</div>
+          <div class="related-link-url">${escapeHtml(page.url || '')}</div>
+        </div>
+        <div class="related-link-arrow">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Dynamic Content Cards
+  if (data.contentCards && data.contentCards.length > 0) {
+    const container = document.getElementById('dynamic-content');
+    const cardsEl = document.getElementById('content-cards');
+    container.classList.remove('hidden');
+
+    cardsEl.innerHTML = data.contentCards.map(card => `
+      <div class="content-card">
+        <div class="content-card-header">
+          <div class="content-card-icon">${card.icon || '📄'}</div>
+          <div class="content-card-title">${escapeHtml(card.title)}</div>
+        </div>
+        <div class="content-card-body">${escapeHtml(card.content)}</div>
+        ${card.link ? `<a class="content-card-link" onclick="openPagePreview('${escapeAttr(card.link)}', '${escapeAttr(card.title)}')">詳しく見る →</a>` : ''}
+      </div>
+    `).join('');
+  }
+
+  // Suggested Questions
+  if (data.suggestedQuestions && data.suggestedQuestions.length > 0) {
+    updateSuggestions(data.suggestedQuestions);
   }
 }
 
-function buildGreeting(data) {
-  let msg = `「${data.title}」を読み込みました！\n\n`;
-
-  if (data.description) {
-    msg += `${data.description}\n\n`;
-  }
-
-  if (data.products.length > 0) {
-    msg += `🛒 ${data.products.length}件の商品が見つかりました。\n`;
-  }
-
-  if (data.navigation.length > 0) {
-    msg += `📑 ${data.navigation.length}件のメニューがあります。\n`;
-  }
-
-  if (data.sections.length > 0) {
-    msg += `📄 ${data.sections.length}件のセクションを検出しました。\n`;
-  }
-
-  msg += '\n何について知りたいですか？下のボタンか、自由に質問してください。';
-
-  return msg;
+function updateSuggestions(questions) {
+  const list = document.getElementById('suggestions-list');
+  list.innerHTML = questions.map(q =>
+    `<button class="suggestion-btn" onclick="sendSuggestion(this)">${escapeHtml(q)}</button>`
+  ).join('');
 }
 
-// === チャット ===
-function toggleChat() {
-  const chatWindow = document.getElementById('chat-window');
-  const isHidden = chatWindow.classList.contains('hidden');
-  if (isHidden) {
-    openChat();
-  } else {
-    chatWindow.classList.add('hidden');
-  }
+// === Site Preview ===
+function openPagePreview(url, title) {
+  const previewEl = document.getElementById('site-preview');
+  const titleEl = document.getElementById('preview-title');
+  const frameEl = document.getElementById('site-frame');
+
+  previewEl.classList.remove('hidden');
+  titleEl.textContent = title || 'ページプレビュー';
+  frameEl.src = '/api/proxy?url=' + encodeURIComponent(url);
 }
 
-function openChat() {
-  document.getElementById('chat-window').classList.remove('hidden');
-  document.getElementById('notification-dot').classList.add('hidden');
-  scrollToBottom();
+function closeSitePreview() {
+  document.getElementById('site-preview').classList.add('hidden');
+  document.getElementById('site-frame').src = '';
 }
 
-function showNotification() {
-  document.getElementById('notification-dot').classList.remove('hidden');
-}
-
+// === Message rendering ===
 function addBotMessage(text) {
   const messages = document.getElementById('chat-messages');
   const div = document.createElement('div');
   div.className = 'message bot';
-  div.innerHTML = `<div class="message-bubble">${escapeHtml(text)}</div>`;
+  div.innerHTML = `
+    <div class="message-avatar">
+      <div class="mini-avatar">
+        <div class="mini-eyes">
+          <div class="mini-eye"></div>
+          <div class="mini-eye"></div>
+        </div>
+      </div>
+    </div>
+    <div class="message-content">
+      <div class="message-bubble">${escapeHtml(text)}</div>
+    </div>`;
   messages.appendChild(div);
   scrollToBottom();
 }
@@ -123,7 +230,10 @@ function addUserMessage(text) {
   const messages = document.getElementById('chat-messages');
   const div = document.createElement('div');
   div.className = 'message user';
-  div.innerHTML = `<div class="message-bubble">${escapeHtml(text)}</div>`;
+  div.innerHTML = `
+    <div class="message-content">
+      <div class="message-bubble">${escapeHtml(text)}</div>
+    </div>`;
   messages.appendChild(div);
   scrollToBottom();
 }
@@ -134,10 +244,20 @@ function showTyping() {
   div.className = 'message bot';
   div.id = 'typing';
   div.innerHTML = `
-    <div class="typing-indicator">
-      <div class="typing-dot"></div>
-      <div class="typing-dot"></div>
-      <div class="typing-dot"></div>
+    <div class="message-avatar">
+      <div class="mini-avatar">
+        <div class="mini-eyes">
+          <div class="mini-eye"></div>
+          <div class="mini-eye"></div>
+        </div>
+      </div>
+    </div>
+    <div class="message-content">
+      <div class="typing-indicator">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
     </div>`;
   messages.appendChild(div);
   scrollToBottom();
@@ -159,84 +279,28 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-function handleChatKey(e) {
-  if (e.key === 'Enter') sendMessage();
+function escapeAttr(text) {
+  return text.replace(/'/g, "\\'").replace(/"/g, '&quot;');
 }
 
-async function sendMessage() {
-  const input = document.getElementById('chat-input');
-  const text = input.value.trim();
-  if (!text) return;
-
-  addUserMessage(text);
-  input.value = '';
-  showTyping();
-
-  // アバターの口を動かす
-  setTalking(true);
-
-  try {
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, siteData }),
-    });
-    const data = await res.json();
-
-    hideTyping();
-    addBotMessage(data.reply);
-    speak(data.reply);
-
-    // ハイライト処理
-    if (data.highlights && data.highlights.length > 0) {
-      handleHighlights(data.highlights);
-    }
-  } catch (error) {
-    hideTyping();
-    addBotMessage('すみません、応答の生成に失敗しました。');
-  }
-
-  setTalking(false);
-}
-
-function sendQuick(text) {
-  document.getElementById('chat-input').value = text;
-  sendMessage();
-}
-
-// === ハイライト（サイト内ブラウザへの操作） ===
-function handleHighlights(highlights) {
-  highlights.forEach(h => {
-    if (h.type === 'navigation' && h.data.length > 0) {
-      // ナビゲーションのリンクをメッセージとして表示
-      let navMsg = '📌 関連リンク:\n';
-      h.data.forEach(item => {
-        navMsg += `・${item.text}\n`;
-      });
-      addBotMessage(navMsg);
-    }
-  });
-}
-
-// === 音声合成 ===
+// === Voice ===
 function toggleVoice() {
   voiceEnabled = !voiceEnabled;
-  const btn = document.getElementById('voice-toggle');
-  btn.textContent = voiceEnabled ? '🔊' : '🔇';
+  document.getElementById('voice-icon-on').classList.toggle('hidden', !voiceEnabled);
+  document.getElementById('voice-icon-off').classList.toggle('hidden', voiceEnabled);
 }
 
 function speak(text) {
   if (!voiceEnabled || !window.speechSynthesis) return;
 
-  // 前の発話を停止
   window.speechSynthesis.cancel();
 
-  const utterance = new SpeechSynthesisUtterance(text.replace(/[🔍💬🔊🛒📋📑📞📌📄]/g, ''));
+  const clean = text.replace(/[🔍💬🔊🛒📋📑📞📌📄✨🏢💡📎🔗]/g, '');
+  const utterance = new SpeechSynthesisUtterance(clean);
   utterance.lang = 'ja-JP';
   utterance.rate = 1.1;
   utterance.pitch = 1.0;
 
-  // 日本語音声を選択
   const voices = window.speechSynthesis.getVoices();
   const jpVoice = voices.find(v => v.lang.startsWith('ja'));
   if (jpVoice) utterance.voice = jpVoice;
@@ -247,7 +311,7 @@ function speak(text) {
   window.speechSynthesis.speak(utterance);
 }
 
-// === 音声認識 ===
+// === Mic ===
 function toggleMic() {
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
     addBotMessage('お使いのブラウザは音声認識に対応していません。');
@@ -259,8 +323,8 @@ function toggleMic() {
     return;
   }
 
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  recognition = new SpeechRecognition();
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
   recognition.lang = 'ja-JP';
   recognition.continuous = false;
   recognition.interimResults = false;
@@ -289,32 +353,10 @@ function stopListening() {
   document.getElementById('mic-btn').classList.remove('active');
 }
 
-// === アバター表情 ===
+// === Avatar ===
 function setTalking(isTalking) {
-  const mouths = document.querySelectorAll('.avatar-mouth');
-  mouths.forEach(m => {
-    if (isTalking) {
-      m.classList.add('talking');
-    } else {
-      m.classList.remove('talking');
-    }
-  });
+  const mouth = document.getElementById('avatar-mouth');
+  if (mouth) {
+    mouth.classList.toggle('talking', isTalking);
+  }
 }
-
-// 目がマウスを追う
-document.addEventListener('mousemove', (e) => {
-  const eyes = document.querySelectorAll('.eye');
-  eyes.forEach(eye => {
-    const rect = eye.getBoundingClientRect();
-    const eyeCenterX = rect.left + rect.width / 2;
-    const eyeCenterY = rect.top + rect.height / 2;
-    const angle = Math.atan2(e.clientY - eyeCenterY, e.clientX - eyeCenterX);
-    const distance = 2;
-    eye.style.transform = `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`;
-  });
-});
-
-// 音声リスト読み込み（一部ブラウザで必要）
-window.speechSynthesis?.addEventListener?.('voiceschanged', () => {
-  window.speechSynthesis.getVoices();
-});

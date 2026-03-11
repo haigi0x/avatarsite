@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HITO - 管理画面</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <div id="admin-app">
+    <!-- サイドバー -->
+    <aside id="sidebar">
+      <div class="sidebar-logo">
+        <span class="logo-text">HITO</span>
+      </div>
+      <div class="sidebar-user">
+        <div class="user-avatar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+        <span id="sidebar-user-name">管理者</span>
+      </div>
+      <nav class="sidebar-nav">
+        <a class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+          </svg>
+          ダッシュボード
+        </a>
+        <a class="nav-item" data-page="chat-test" onclick="navigateTo('chat-test')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          チャットテスト・修正
+        </a>
+        <a class="nav-item" data-page="knowledge" onclick="navigateTo('knowledge')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+          </svg>
+          知識ベース（RAG）
+        </a>
+        <a class="nav-item" data-page="modes" onclick="navigateTo('modes')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 17 12 22 22 17"/>
+            <polyline points="2 12 12 17 22 12"/>
+          </svg>
+          モード管理
+        </a>
+        <a class="nav-item" data-page="settings" onclick="navigateTo('settings')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          基本設定
+        </a>
+      </nav>
+    </aside>
+
+    <!-- メインコンテンツ -->
+    <main id="main-content">
+      <!-- ヘッダー -->
+      <header id="admin-header">
+        <div></div>
+        <div class="header-actions">
+          <button class="header-btn" title="通知">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          </button>
+          <button class="header-btn" title="ヘルプ">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </button>
+          <button class="header-btn" title="アカウント">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- ページコンテンツ -->
+      <div id="page-content">
+
+        <!-- ダッシュボード -->
+        <section id="page-dashboard" class="page active">
+          <h1 class="page-title">ダッシュボード</h1>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon chat-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+              </div>
+              <div class="stat-info">
+                <div class="stat-value" id="stat-conversations">0</div>
+                <div class="stat-label">本日の会話総数</div>
+              </div>
+              <div class="stat-change positive" id="stat-conv-change">--</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon user-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </div>
+              <div class="stat-info">
+                <div class="stat-value" id="stat-users">0</div>
+                <div class="stat-label">会話したユーザー総数</div>
+              </div>
+              <div class="stat-change positive" id="stat-users-change">--</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon mode-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+              <div class="stat-info">
+                <div class="stat-value" id="stat-mode">Default</div>
+                <div class="stat-label">現在の利用モード</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <div class="section-header">
+              <h2>会話履歴</h2>
+              <button class="text-btn">もっと見る →</button>
+            </div>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>日時</th>
+                    <th>モード</th>
+                    <th>直近メッセージ</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="conversation-history">
+                  <tr>
+                    <td colspan="4" class="empty-state">会話履歴はまだありません</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- チャットテスト・修正 -->
+        <section id="page-chat-test" class="page">
+          <h1 class="page-title">チャットテスト・修正</h1>
+          <p class="page-description">アバターと会話しながら応答品質をチェック</p>
+
+          <div class="chat-test-container">
+            <div class="chat-test-window">
+              <div class="chat-test-messages" id="test-chat-messages">
+                <div class="test-empty-state">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="9" y1="9" x2="15" y2="9"/>
+                    <line x1="9" y1="13" x2="13" y2="13"/>
+                  </svg>
+                  <h3>会話を開始しましょう</h3>
+                  <p>下のフォームからメッセージを送信してください</p>
+                </div>
+              </div>
+              <div class="chat-test-input">
+                <input type="text" id="test-chat-input" placeholder="テキストを送信してください..." onkeypress="if(event.key==='Enter')sendTestMessage()" />
+                <button onclick="sendTestMessage()" class="btn-primary">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="22" y1="2" x2="11" y2="13"/>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                  </svg>
+                  送信
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 知識ベース（RAG） -->
+        <section id="page-knowledge" class="page">
+          <h1 class="page-title">知識ベース（RAG）</h1>
+          <p class="page-description">アバターが回答に使用する企業情報を管理します</p>
+
+          <div class="knowledge-actions">
+            <button class="btn-primary" onclick="showAddKnowledge()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              新規追加
+            </button>
+          </div>
+
+          <!-- 追加フォーム -->
+          <div id="knowledge-form" class="section-card hidden">
+            <h3 class="form-title">知識アイテムの追加</h3>
+            <div class="form-group">
+              <label>カテゴリ</label>
+              <select id="kb-category">
+                <option value="company">会社情報</option>
+                <option value="service">サービス・製品</option>
+                <option value="faq">よくある質問</option>
+                <option value="contact">お問い合わせ</option>
+                <option value="other">その他</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>タイトル</label>
+              <input type="text" id="kb-title" placeholder="例: 会社概要" />
+            </div>
+            <div class="form-group">
+              <label>内容</label>
+              <textarea id="kb-content" rows="6" placeholder="アバターが参照する情報を入力してください..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>関連URL（任意）</label>
+              <input type="url" id="kb-url" placeholder="https://example.com/about" />
+            </div>
+            <div class="form-actions">
+              <button class="btn-secondary" onclick="hideAddKnowledge()">キャンセル</button>
+              <button class="btn-primary" onclick="saveKnowledge()">保存</button>
+            </div>
+          </div>
+
+          <!-- 知識ベース一覧 -->
+          <div id="knowledge-list">
+            <div class="empty-card" id="knowledge-empty">
+              <p>知識ベースにアイテムがまだ登録されていません</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- モード管理 -->
+        <section id="page-modes" class="page">
+          <h1 class="page-title">モード管理</h1>
+
+          <div class="mode-detail">
+            <div class="mode-header-bar">
+              <div>
+                <h2 class="mode-name">Default（基本キャラクター設定）</h2>
+                <p class="mode-description">すべてのモードのベースとなる基本設定</p>
+              </div>
+              <div class="mode-actions">
+                <button class="btn-secondary">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  バージョン管理
+                </button>
+                <button class="btn-primary">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                  </svg>
+                  最適化する
+                </button>
+              </div>
+            </div>
+
+            <div class="section-card">
+              <div class="prompt-header">
+                <h3>基本プロンプト</h3>
+                <span class="version-badge" id="prompt-version">v1</span>
+              </div>
+              <textarea id="mode-prompt" class="prompt-editor" rows="20" placeholder="キャラクターのプロンプトを入力...">
+# バーチャルヒューマン
+
+## 基本プロファイル
+- **名前**: AIアシスタント
+- **性格**: 親しみやすく、知的で落ち着いた雰囲気
+- **話し方**: 丁寧で自然な日本語、敬語と砕けた表現のバランスを取る
+
+## コアコンピテンシー
+1. **情報提供**: 知識ベースに基づいた正確な情報提供
+2. **共感的対話**: ユーザーの気持ちに寄り添った応答
+3. **適応性**: 文脈に応じた柔軟な対応
+
+## 応答ガイドライン
+### 優先順位
+1. 知識ベースの情報を最優先
+2. 不明な場合は推測せず正直に伝える
+3. ユーザーの質問の意図を理解する
+
+### トーン & マナー
+- 親しみやすさを保ちつつ、専門性を示す
+- 長すぎず、短すぎない適度な長さで回答
+- 必要に応じて追加質問を促す</textarea>
+              <div class="form-actions">
+                <button class="btn-primary" onclick="saveMode()">プロンプトを保存</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 基本設定 -->
+        <section id="page-settings" class="page">
+          <h1 class="page-title">基本設定</h1>
+
+          <div class="section-card">
+            <div class="settings-section-header">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              <h3>キャラクター設定</h3>
+            </div>
+
+            <div class="form-group">
+              <label>表示名</label>
+              <input type="text" id="setting-name" placeholder="バーチャルヒューマンの表示名" />
+              <span class="form-hint">バーチャルヒューマンの表示名</span>
+            </div>
+
+            <div class="form-group">
+              <label>アイコン画像</label>
+              <div class="avatar-upload">
+                <div class="avatar-preview" id="avatar-preview">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                </div>
+                <button class="btn-secondary" onclick="document.getElementById('avatar-file').click()">画像を変更</button>
+                <input type="file" id="avatar-file" accept="image/*" class="hidden" />
+                <span class="form-hint">推奨: 正方形、PNG/JPG、最大2MB</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <div class="settings-section-header">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <h3>会話設定</h3>
+            </div>
+
+            <div class="form-group">
+              <label>適用モード</label>
+              <select id="setting-mode">
+                <option value="default">Default</option>
+              </select>
+              <span class="form-hint">システム起動時に使用されるモード</span>
+            </div>
+
+            <div class="form-group">
+              <label>ウェルカムメッセージ</label>
+              <textarea id="setting-welcome" rows="3" placeholder="最初に表示するメッセージ">こんにちは！何についてお聞きになりたいですか？</textarea>
+            </div>
+
+            <div class="form-group">
+              <label>デフォルト質問候補</label>
+              <textarea id="setting-suggestions" rows="4" placeholder="1行に1つずつ質問候補を入力">どんなサービスを提供していますか？
+会社の特徴を教えてください
+お問い合わせ方法は？</textarea>
+              <span class="form-hint">1行に1つずつ入力してください</span>
+            </div>
+          </div>
+
+          <div class="settings-save">
+            <button class="btn-primary btn-large" onclick="saveSettings()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/>
+                <polyline points="7 3 7 8 15 8"/>
+              </svg>
+              設定を保存
+            </button>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

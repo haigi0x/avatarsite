@@ -3,104 +3,150 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Avatar Site Guide - AIアバターがサイトをご案内</title>
+  <title>HITO - AIアバターアシスタント</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- URL入力バー -->
-  <div id="url-bar">
-    <div class="url-bar-inner">
-      <div class="url-icon">🌐</div>
-      <input type="url" id="url-input" placeholder="URLを入力してください（例: https://example.com）" />
-      <button id="load-btn">読み込む</button>
-    </div>
-    <div id="loading-indicator" class="hidden">
-      <div class="spinner"></div>
-      <span>サイトを分析中...</span>
-    </div>
-  </div>
-
-  <!-- サービス内ブラウザ -->
-  <div id="browser-area">
-    <div id="welcome-screen">
-      <div class="welcome-content">
-        <div class="welcome-avatar">
-          <div class="avatar-large" id="welcome-avatar-face"></div>
-        </div>
-        <h1>Avatar Site Guide</h1>
-        <p>URLを入力すると、AIアバターがそのサイトの内容をチャット＆音声で案内します</p>
-        <div class="features">
-          <div class="feature-item">
-            <span class="feature-icon">🔍</span>
-            <span>サイト情報を自動分析</span>
-          </div>
-          <div class="feature-item">
-            <span class="feature-icon">💬</span>
-            <span>チャットで質問・案内</span>
-          </div>
-          <div class="feature-item">
-            <span class="feature-icon">🔊</span>
-            <span>音声で読み上げ対応</span>
-          </div>
-          <div class="feature-item">
-            <span class="feature-icon">🛒</span>
-            <span>ECサイト・HPに対応</span>
-          </div>
-        </div>
-      </div>
-    </div>
-    <iframe id="site-frame" class="hidden" sandbox="allow-same-origin allow-scripts allow-popups allow-forms"></iframe>
-  </div>
-
-  <!-- 右下アバター -->
-  <div id="avatar-container" class="minimized">
-    <!-- 最小化時のアバターアイコン -->
-    <div id="avatar-bubble" onclick="toggleChat()">
-      <div class="avatar-face" id="avatar-face">
-        <div class="avatar-eyes">
-          <div class="eye left-eye"></div>
-          <div class="eye right-eye"></div>
-        </div>
-        <div class="avatar-mouth"></div>
-      </div>
-      <div class="notification-dot hidden" id="notification-dot"></div>
-    </div>
-
-    <!-- チャットウィンドウ -->
-    <div id="chat-window" class="hidden">
-      <div id="chat-header">
-        <div class="chat-header-left">
-          <div class="avatar-face-small">
-            <div class="avatar-eyes-small">
-              <div class="eye-small"></div>
-              <div class="eye-small"></div>
+  <div id="app">
+    <!-- 左パネル：アバター＋チャット -->
+    <div id="left-panel">
+      <div id="avatar-section">
+        <div id="avatar-display">
+          <div class="avatar-circle" id="main-avatar">
+            <div class="avatar-eyes">
+              <div class="eye left-eye"></div>
+              <div class="eye right-eye"></div>
             </div>
-            <div class="avatar-mouth-small"></div>
+            <div class="avatar-mouth" id="avatar-mouth"></div>
           </div>
-          <span>AIガイド</span>
-        </div>
-        <div class="chat-header-right">
-          <button id="voice-toggle" onclick="toggleVoice()" title="音声ON/OFF">🔊</button>
-          <button onclick="toggleChat()" title="閉じる">✕</button>
-        </div>
-      </div>
-      <div id="chat-messages">
-        <div class="message bot">
-          <div class="message-bubble">こんにちは！URLを入力してサイトを読み込むと、その内容をご案内します。</div>
+          <div id="avatar-name">AIアシスタント</div>
+          <div id="avatar-status">
+            <span class="status-dot"></span>
+            オンライン
+          </div>
         </div>
       </div>
-      <div id="chat-input-area">
-        <div id="quick-actions" class="hidden">
-          <button class="quick-btn" onclick="sendQuick('概要を教えて')">📋 概要</button>
-          <button class="quick-btn" onclick="sendQuick('商品を教えて')">🛒 商品</button>
-          <button class="quick-btn" onclick="sendQuick('メニュー一覧')">📑 メニュー</button>
-          <button class="quick-btn" onclick="sendQuick('問い合わせ先')">📞 連絡先</button>
+
+      <div id="chat-section">
+        <div id="chat-messages">
+          <div class="message bot">
+            <div class="message-avatar">
+              <div class="mini-avatar">
+                <div class="mini-eyes">
+                  <div class="mini-eye"></div>
+                  <div class="mini-eye"></div>
+                </div>
+              </div>
+            </div>
+            <div class="message-content">
+              <div class="message-bubble">こんにちは！何についてお聞きになりたいですか？</div>
+            </div>
+          </div>
         </div>
-        <div class="input-row">
-          <input type="text" id="chat-input" placeholder="質問を入力..." onkeypress="handleChatKey(event)" />
-          <button id="mic-btn" onclick="toggleMic()" title="音声入力">🎤</button>
-          <button id="send-btn" onclick="sendMessage()">送信</button>
+
+        <!-- 次の質問候補 -->
+        <div id="suggested-questions">
+          <div class="suggested-label">こんな質問はいかがですか？</div>
+          <div id="suggestions-list">
+            <button class="suggestion-btn" onclick="sendSuggestion(this)">どんなサービスを提供していますか？</button>
+            <button class="suggestion-btn" onclick="sendSuggestion(this)">会社の特徴を教えてください</button>
+            <button class="suggestion-btn" onclick="sendSuggestion(this)">お問い合わせ方法は？</button>
+          </div>
         </div>
+
+        <div id="chat-input-area">
+          <div class="input-row">
+            <button id="mic-btn" onclick="toggleMic()" title="音声入力">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+            </button>
+            <input type="text" id="chat-input" placeholder="メッセージを入力..." onkeypress="handleChatKey(event)" />
+            <button id="voice-toggle" onclick="toggleVoice()" title="音声ON/OFF">
+              <svg id="voice-icon-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+              </svg>
+              <svg id="voice-icon-off" class="hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                <line x1="23" y1="9" x2="17" y2="15"/>
+                <line x1="17" y1="9" x2="23" y2="15"/>
+              </svg>
+            </button>
+            <button id="send-btn" onclick="sendMessage()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右パネル：動的コンテンツ -->
+    <div id="right-panel">
+      <!-- ウェルカム画面 -->
+      <div id="welcome-screen">
+        <div class="welcome-inner">
+          <div class="welcome-icon">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <h2>会話を始めましょう</h2>
+          <p>左のチャットから質問すると、関連情報がここに表示されます</p>
+        </div>
+      </div>
+
+      <!-- AI回答サマリ -->
+      <div id="ai-summary" class="hidden">
+        <div class="summary-header">
+          <div class="summary-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <span>AI回答サマリ</span>
+        </div>
+        <div id="summary-content"></div>
+      </div>
+
+      <!-- 関連ページリンク -->
+      <div id="related-pages" class="hidden">
+        <div class="related-header">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>
+          <span>関連ページ</span>
+        </div>
+        <div id="related-links"></div>
+      </div>
+
+      <!-- 詳細コンテンツ表示エリア -->
+      <div id="dynamic-content" class="hidden">
+        <div id="content-cards"></div>
+      </div>
+
+      <!-- サイトプレビュー（iframe） -->
+      <div id="site-preview" class="hidden">
+        <div class="preview-header">
+          <span id="preview-title">ページプレビュー</span>
+          <button onclick="closeSitePreview()" class="preview-close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <iframe id="site-frame" sandbox="allow-same-origin allow-scripts allow-popups allow-forms"></iframe>
       </div>
     </div>
   </div>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Avatar Site Guide - AIアバターがサイトをご案内</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- URL入力バー -->
+  <div id="url-bar">
+    <div class="url-bar-inner">
+      <div class="url-icon">🌐</div>
+      <input type="url" id="url-input" placeholder="URLを入力してください（例: https://example.com）" />
+      <button id="load-btn">読み込む</button>
+    </div>
+    <div id="loading-indicator" class="hidden">
+      <div class="spinner"></div>
+      <span>サイトを分析中...</span>
+    </div>
+  </div>
+
+  <!-- サービス内ブラウザ -->
+  <div id="browser-area">
+    <div id="welcome-screen">
+      <div class="welcome-content">
+        <div class="welcome-avatar">
+          <div class="avatar-large" id="welcome-avatar-face"></div>
+        </div>
+        <h1>Avatar Site Guide</h1>
+        <p>URLを入力すると、AIアバターがそのサイトの内容をチャット＆音声で案内します</p>
+        <div class="features">
+          <div class="feature-item">
+            <span class="feature-icon">🔍</span>
+            <span>サイト情報を自動分析</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-icon">💬</span>
+            <span>チャットで質問・案内</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-icon">🔊</span>
+            <span>音声で読み上げ対応</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-icon">🛒</span>
+            <span>ECサイト・HPに対応</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <iframe id="site-frame" class="hidden" sandbox="allow-same-origin allow-scripts allow-popups allow-forms"></iframe>
+  </div>
+
+  <!-- 右下アバター -->
+  <div id="avatar-container" class="minimized">
+    <!-- 最小化時のアバターアイコン -->
+    <div id="avatar-bubble" onclick="toggleChat()">
+      <div class="avatar-face" id="avatar-face">
+        <div class="avatar-eyes">
+          <div class="eye left-eye"></div>
+          <div class="eye right-eye"></div>
+        </div>
+        <div class="avatar-mouth"></div>
+      </div>
+      <div class="notification-dot hidden" id="notification-dot"></div>
+    </div>
+
+    <!-- チャットウィンドウ -->
+    <div id="chat-window" class="hidden">
+      <div id="chat-header">
+        <div class="chat-header-left">
+          <div class="avatar-face-small">
+            <div class="avatar-eyes-small">
+              <div class="eye-small"></div>
+              <div class="eye-small"></div>
+            </div>
+            <div class="avatar-mouth-small"></div>
+          </div>
+          <span>AIガイド</span>
+        </div>
+        <div class="chat-header-right">
+          <button id="voice-toggle" onclick="toggleVoice()" title="音声ON/OFF">🔊</button>
+          <button onclick="toggleChat()" title="閉じる">✕</button>
+        </div>
+      </div>
+      <div id="chat-messages">
+        <div class="message bot">
+          <div class="message-bubble">こんにちは！URLを入力してサイトを読み込むと、その内容をご案内します。</div>
+        </div>
+      </div>
+      <div id="chat-input-area">
+        <div id="quick-actions" class="hidden">
+          <button class="quick-btn" onclick="sendQuick('概要を教えて')">📋 概要</button>
+          <button class="quick-btn" onclick="sendQuick('商品を教えて')">🛒 商品</button>
+          <button class="quick-btn" onclick="sendQuick('メニュー一覧')">📑 メニュー</button>
+          <button class="quick-btn" onclick="sendQuick('問い合わせ先')">📞 連絡先</button>
+        </div>
+        <div class="input-row">
+          <input type="text" id="chat-input" placeholder="質問を入力..." onkeypress="handleChatKey(event)" />
+          <button id="mic-btn" onclick="toggleMic()" title="音声入力">🎤</button>
+          <button id="send-btn" onclick="sendMessage()">送信</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
